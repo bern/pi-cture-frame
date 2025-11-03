@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
-import google.generativeai as genai
+import requests
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for the client to communicate with the server
@@ -9,8 +9,8 @@ CORS(app)  # Enable CORS for the client to communicate with the server
 # Google Gemini API Key
 GOOGLE_GEMINI_API_KEY = os.getenv('GOOGLE_GEMINI_API_KEY', 'your-api-key-here')
 
-# Configure the Gemini API
-genai.configure(api_key=GOOGLE_GEMINI_API_KEY)
+# Gemini API base URL
+GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent'
 
 # Variable to store the received image
 stored_image = None
@@ -29,21 +29,44 @@ def handle_prompt():
         return jsonify({'error': 'Prompt query parameter is required'}), 400
     
     try:
-        # Initialize the Gemini model for image generation
-        # Using gemini-2.0-flash-exp or gemini-pro-vision based on availability
+        # Call Gemini API using REST API directly
         # Adjust model name as needed for "flash 2.5 nano banana"
-        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        api_url = f"{GEMINI_API_URL}?key={GOOGLE_GEMINI_API_KEY}"
         
-        # Generate image based on prompt
-        # Note: Gemini API primarily generates text; for image generation, 
-        # you may need to use a different approach or service
-        response = model.generate_content(prompt)
+        payload = {
+            "contents": [{
+                "parts": [{
+                    "text": prompt
+                }]
+            }]
+        }
+        
+        response = requests.post(api_url, json=payload)
+        response.raise_for_status()
+        
+        result = response.json()
+        
+        # Extract text from the response
+        if 'candidates' in result and len(result['candidates']) > 0:
+            content = result['candidates'][0].get('content', {})
+            parts = content.get('parts', [])
+            if parts and 'text' in parts[0]:
+                generated_text = parts[0]['text']
+            else:
+                generated_text = str(result)
+        else:
+            generated_text = str(result)
         
         return jsonify({
             'success': True,
-            'response': response.text if hasattr(response, 'text') else str(response)
+            'response': generated_text
         }), 200
         
+    except requests.exceptions.RequestException as e:
+        return jsonify({
+            'error': 'Failed to generate content',
+            'details': str(e)
+        }), 500
     except Exception as e:
         return jsonify({
             'error': 'Failed to generate content',
