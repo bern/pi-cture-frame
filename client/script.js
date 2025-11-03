@@ -1,5 +1,5 @@
 // Global variable for the Pi Frame address
-const PiFrameAddress = 'http://localhost:3000'; // Update this with your actual server URL
+const PiFrameAddress = 'https://commonplacely-unforecasted-alica.ngrok-free.dev'; // Update this with your actual server URL
 
 // Prompt submission handler
 document.getElementById('submitPromptBtn').addEventListener('click', async () => {
@@ -15,6 +15,9 @@ document.getElementById('submitPromptBtn').addEventListener('click', async () =>
         const url = `${PiFrameAddress}/prompt?prompt=${encodeURIComponent(prompt)}`;
         const response = await fetch(url, {
             method: 'GET',
+            headers: {
+                'ngrok-skip-browser-warning': '0123'
+            }
         });
         
         if (response.ok) {
@@ -73,6 +76,7 @@ sendImageBtn.addEventListener('click', async () => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': '0123'
             },
             body: JSON.stringify(selectedImage),
         });
