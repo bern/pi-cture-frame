@@ -2,6 +2,10 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 import requests
+from PIL import Image
+from inky.auto import auto
+import base64
+from io import BytesIO
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for the client to communicate with the server
@@ -46,20 +50,56 @@ def handle_prompt():
         
         result = response.json()
         
-        # Extract text from the response
+        # Handle response with candidates and parts containing inlineData
         if 'candidates' in result and len(result['candidates']) > 0:
             content = result['candidates'][0].get('content', {})
             parts = content.get('parts', [])
-            if parts and 'text' in parts[0]:
-                generated_text = parts[0]['text']
-            else:
-                generated_text = str(result)
-        else:
-            generated_text = str(result)
+            
+            if parts and len(parts) > 0:
+                # Check if parts contain inlineData (image)
+                if 'inlineData' in parts[0]:
+                    inline_data = parts[0]['inlineData']
+                    # Save the inlineData (contains mimeType and data)
+                    global stored_image
+                    stored_image = {
+                        'mimeType': inline_data.get('mimeType'),
+                        'data': inline_data.get('data')  # Base64 encoded image
+                    }
+                    # Print the stored image
+                    print("Stored image:")
+                    print(f"  mimeType: {stored_image['mimeType']}")
+                    print(f"  data length: {len(stored_image['data']) if stored_image['data'] else 0} characters")
+                    print(f"  data preview: {stored_image['data'][:100] if stored_image['data'] else 'None'}...")
+
+                    inky = auto(ask_user=True, verbose=True)
+                    image_data = base64.b64decode(stored_image['data'])
+                    # Step 2: Wrap the bytes in a BytesIO buffer
+                    image_buffer = BytesIO(image_data)
+                    # Step 3: Open the image with PIL
+                    img = Image.open(image_buffer)
+
+                    inky.set_image(img)
+                    inky.show()
+
+                    return jsonify({
+                        'success': True,
+                        'message': 'Image received and stored successfully',
+                        'image_info': {
+                            'mimeType': stored_image['mimeType']
+                        }
+                    }), 200
+                # Otherwise, extract text if available
+                elif 'text' in parts[0]:
+                    generated_text = parts[0]['text']
+                    return jsonify({
+                        'success': True,
+                        'response': generated_text
+                    }), 200
         
+        # Fallback if no valid structure found
         return jsonify({
             'success': True,
-            'response': generated_text
+            'response': str(result)
         }), 200
         
     except requests.exceptions.RequestException as e:
@@ -93,6 +133,17 @@ def handle_image():
                 'size': data.get('size'),
                 'data': data.get('data')  # Base64 encoded image
             }
+            
+            # Render image to inky display
+            inky = auto(ask_user=True, verbose=True)
+            image_data = base64.b64decode(stored_image['data'])
+            # Wrap the bytes in a BytesIO buffer
+            image_buffer = BytesIO(image_data)
+            # Open the image with PIL
+            img = Image.open(image_buffer)
+
+            inky.set_image(img)
+            inky.show()
             
             return jsonify({
                 'success': True,
