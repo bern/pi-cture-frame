@@ -45,11 +45,17 @@ imageInput.addEventListener('change', (e) => {
         const reader = new FileReader();
         
         reader.onload = (event) => {
+            // Strip data URL prefix (e.g., "data:image/png;base64,") to get just the base64 data
+            let base64Data = event.target.result;
+            if (base64Data.includes(',')) {
+                base64Data = base64Data.split(',')[1];
+            }
+            
             selectedImage = {
                 name: file.name,
                 type: file.type,
                 size: file.size,
-                data: event.target.result // Base64 encoded image data
+                data: base64Data // Base64 encoded image data (without data URL prefix)
             };
             
             // Display preview

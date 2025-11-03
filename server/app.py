@@ -72,6 +72,12 @@ def handle_prompt():
                         break
         
         if image_data_base64:
+            # Ensure proper padding for base64 decoding
+            # Base64 strings must be multiples of 4 characters
+            padding_needed = len(image_data_base64) % 4
+            if padding_needed:
+                image_data_base64 += '=' * (4 - padding_needed)
+            
             # Decode base64 data (like the bash script: base64 --decode)
             image_data = base64.b64decode(image_data_base64)
             
@@ -128,16 +134,28 @@ def handle_image():
         # Extract image data from the request body
         # The client sends: {name, type, size, data} where data is base64
         if 'data' in data:
+            base64_data = data.get('data')
+            
+            # Strip data URL prefix if present (e.g., "data:image/png;base64,")
+            if base64_data and ',' in base64_data:
+                base64_data = base64_data.split(',')[1]
+            
+            # Ensure proper padding for base64 decoding
+            # Base64 strings must be multiples of 4 characters
+            padding_needed = len(base64_data) % 4
+            if padding_needed:
+                base64_data += '=' * (4 - padding_needed)
+            
             stored_image = {
                 'name': data.get('name'),
                 'type': data.get('type'),
                 'size': data.get('size'),
-                'data': data.get('data')  # Base64 encoded image
+                'data': base64_data  # Base64 encoded image
             }
             
             # Render image to inky display
             inky = auto(ask_user=True, verbose=True)
-            image_data = base64.b64decode(stored_image['data'])
+            image_data = base64.b64decode(base64_data)
             # Wrap the bytes in a BytesIO buffer
             image_buffer = BytesIO(image_data)
             # Open the image with PIL
