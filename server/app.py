@@ -53,18 +53,41 @@ def handle_prompt():
         
         result = response.json()
         
-        image_parts = [
-            part.inline_data.data
-            for part in response.candidates[0].content.parts
-            if part.inline_data
-        ]
-
-        if image_parts:
+        # Extract image data from Gemini response following the bash script pattern
+        # Look for "data" field in inlineData structure: candidates[0].content.parts[].inlineData.data
+        image_data_base64 = None
+        mime_type = None
+        
+        if 'candidates' in result and len(result['candidates']) > 0:
+            content = result['candidates'][0].get('content', {})
+            parts = content.get('parts', [])
+            
+            for part in parts:
+                # Check for both 'inlineData' and 'inline_data' formats
+                inline_data = part.get('inlineData') or part.get('inline_data')
+                if inline_data:
+                    image_data_base64 = inline_data.get('data')
+                    mime_type = inline_data.get('mimeType') or inline_data.get('mime_type')
+                    if image_data_base64:
+                        break
+        
+        if image_data_base64:
+            # Decode base64 data (like the bash script: base64 --decode)
+            image_data = base64.b64decode(image_data_base64)
+            
+            # Open image and resize for inky display
             inky = auto(ask_user=True, verbose=True)
-            img = Image.open(BytesIO(image_parts[0]))
-            resizedImage = img.resize(inky.resolution)
-            inky.set_image(resizedImage)
+            img = Image.open(BytesIO(image_data))
+            resized_image = img.resize(inky.resolution)
+            inky.set_image(resized_image)
             inky.show()
+            
+            # Store image info
+            global stored_image
+            stored_image = {
+                'mimeType': mime_type,
+                'data': image_data_base64
+            }
 
             return jsonify({
                 'success': True,
