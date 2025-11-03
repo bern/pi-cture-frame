@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bernie's Desk Frame</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Bernie's Desk Frame</h1>
+        
+        <div class="card">
+            <h2>Send a Prompt</h2>
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="promptInput" 
+                    placeholder="What do you want to show up on my desk frame?"
+                    class="input-field"
+                >
+                <button id="submitPromptBtn" class="btn btn-primary">Submit Prompt</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Send an Image</h2>
+            <div class="image-upload-section">
+                <input 
+                    type="file" 
+                    id="imageInput" 
+                    accept="image/*"
+                    class="file-input"
+                >
+                <label for="imageInput" class="file-label">
+                    <span class="file-label-text">Choose Image</span>
+                </label>
+                <div id="imagePreview" class="image-preview"></div>
+                <button id="sendImageBtn" class="btn btn-secondary" disabled>Send Image</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
