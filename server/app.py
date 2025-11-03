@@ -161,7 +161,8 @@ def handle_image():
             # Open the image with PIL
             img = Image.open(image_buffer)
 
-            inky.set_image(img)
+            resized_image = img.resize(inky.resolution)
+            inky.set_image(resized_image)
             inky.show()
             
             return jsonify({
